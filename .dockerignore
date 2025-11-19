@@ -1,0 +1,24 @@
+# Игнорировать виртуальные окружения
+venv/
+.venv/
+
+# Игнорировать файлы, создованные IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Локальные настройки
+.env
+*.pyc
+__pycache__/
+db.sqlite3
+
+# Файлы логов и временные файлы
+*.log
+*.tmp
+*.bak
+
+# Каталоги статик и медиа
+static/
+media/

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "el_network"
+version = "0.1.0"
+description = "Проект Django для сети продаж электроники"
+authors = [{ name = "Carplatinum", email = "mymillions@ya.ru" }]
+requires-python = ">=3.8,<4.0"
+dependencies = [
+    "django>=3.2,<4.0",
+    "djangorestframework>=3.10,<4.0",
+    "psycopg2-binary",
+    "django-filter",
+    "django-environ",
+    "djangorestframework-simplejwt",
+    "django-cors-headers",
+    "celery",
+    "redis",
+    "python-dotenv"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]

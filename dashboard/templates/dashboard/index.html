@@ -1,0 +1,35 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<div style="background-color: #f1f5fa; padding: 20px; width: 100%;">
+
+  <h1 style="text-align: center; margin: 0 0 10px 0; color: #0c4a9e;">Добро пожаловать в админку сети электроники</h1>
+  <p style="text-align: center; margin: 0 0 20px 0; color: #4a6ea9;">Здесь можно управлять магазинами, сотрудниками и товарами.</p>
+
+  <div class="btn-group" role="group" aria-label="Управление"
+       style="display: flex; justify-content: space-between; width: 100%; margin-top: 20px;">
+
+    <a href="/admin/network/store/" class="btn"
+       style="flex: 1; margin: 0 5px; text-align: center; border-radius: .25rem; background-color: #0c4a9e; color: white; border: none;">
+      Магазины
+    </a>
+
+    <a href="/admin/network/employee/" class="btn"
+       style="flex: 1; margin: 0 5px; text-align: center; border-radius: .25rem; background-color: #5480d3; color: white; border: none;">
+      Сотрудники
+    </a>
+
+    <a href="/admin/network/product/" class="btn"
+       style="flex: 1; margin: 0 5px; text-align: center; border-radius: .25rem; background-color: #4f9f4f; color: white; border: none;">
+      Товары
+    </a>
+
+    <a href="/admin/network/sale/" class="btn"
+       style="flex: 1; margin: 0 5px; text-align: center; border-radius: .25rem; background-color: #2e8b57; color: white; border: none;">
+      Продажи
+    </a>
+
+  </div>
+
+</div>
+{% endblock %}
