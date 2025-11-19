@@ -32,8 +32,14 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     env:
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
       POSTGRES_DB: board_db
       POSTGRES_USER: board_user
       POSTGRES_PASSWORD: board_password
@@ -41,9 +47,8 @@ jobs:
       POSTGRES_PORT: 5432
       REDIS_URL: redis://localhost:6379/0
       DJANGO_SETTINGS_MODULE: config.settings.base
-      DJANGO_SECRET_KEY: test-secret-key-for-ci
-      DJANGO_DEBUG: "False"
-      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      DEBUG: "False"
+      ALLOWED_HOSTS: localhost,127.0.0.1
 
     steps:
       - name: Checkout code
@@ -151,3 +156,8 @@ jobs:
               git clean -fd
               git pull origin develop
             fi
+            docker-compose down
+            docker-compose up -d --build
+            docker-compose exec web python manage.py migrate
+            docker-compose exec web python manage.py collectstatic --noinput
+            sudo systemctl restart nginx
