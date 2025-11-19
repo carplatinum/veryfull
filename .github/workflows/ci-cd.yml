@@ -54,10 +54,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python 3.13
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: 3.13
+          python-version: 3.11
 
       - name: Install Poetry
         uses: abatilo/actions-poetry@v4
