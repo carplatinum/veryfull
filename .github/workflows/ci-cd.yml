@@ -79,7 +79,7 @@ jobs:
       - name: Show Poetry environment info
         run: poetry env info
 
-      - name: Clear old migration cache and pycache
+      - name: Clear migration cache and pycache
         run: |
           find . -name "*.pyc" -delete
           find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -147,11 +147,11 @@ jobs:
           script: |
             cd ${{ secrets.DEPLOY_DIR }}
             if [ ! -d ".git" ]; then
-              echo "Repository not found, cleaning folder and cloning..."
+              echo "Cloning repository..."
               rm -rf ./* ./.??*
               git clone https://github.com/carplatinum/board.git .
             else
-              echo "Repository found, pulling latest changes..."
+              echo "Pulling latest changes..."
               git reset --hard
               git clean -fd
               git pull origin develop
