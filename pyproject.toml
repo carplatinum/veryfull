@@ -18,7 +18,8 @@ dependencies = [
     "django-cors-headers",
     "celery",
     "redis",
-    "python-dotenv"
+    "python-dotenv",
+    "django-countries (>=8.1.1,<9.0.0)"
 ]
 
 [tool.setuptools.packages.find]
