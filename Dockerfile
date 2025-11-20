@@ -1,11 +1,12 @@
 # Используем multistage билд для минимизации размера финального образа
 FROM python:3.11-slim as builder
 
-# Настройка переменных окружения
+# Переменные окружения
 ENV PYTHONUNBUFFERED=1
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+ENV PATH="/app/.venv/bin:$PATH"
 
-# Установка зависимостей
+# Установка системных библиотек для сборки зависимостей
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
@@ -13,46 +14,45 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Установка Poetry
-RUN pip install --upgrade pip setuptools wheel && \
-    pip install poetry
+RUN pip install --upgrade pip setuptools wheel
+RUN pip install poetry
 
 WORKDIR /app
 
-# Копируем зависимости файлы
+# Копируем pyproject.toml и poetry.lock для установки зависимостей
 COPY poetry.lock pyproject.toml ./
-# Установка зависимостей в изолированный каталог
+
+# Устанавливаем зависимости в локальное виртуальное окружение в /app/.venv
 RUN poetry install --no-root --without dev
 
 # Копируем весь проект
 COPY . .
 
-# Собираем статические файлы
-RUN python manage.py collectstatic --noinput
+# Собираем статические файлы через Poetry (в виртуальном окружении)
+RUN poetry run python manage.py collectstatic --noinput
 
-# Создаем финальный имедж на базе slim образа Python
+# Финальный минимальный образ
 FROM python:3.11-slim
 
-# Указываем рабочую директорию
+ENV PYTHONUNBUFFERED=1
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH=/app
+
 WORKDIR /app
 
-# Устанавливаем зависимости необходимых runtime
+# Устанавливаем runtime зависимости
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Копируем зависимости из билд-образа
-COPY --from=builder /root/.cache/pypoetry /root/.cache/pypoetry
+# Копируем виртуальное окружение из слоя builder
+COPY --from=builder /app/.venv /app/.venv
+
+# Копируем код проекта
 COPY --from=builder /app /app
 
-# Устанавливаем зависимости
-RUN pip install --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt
+# Через Poetry запускаем сборку статических файлов для production (если нужно)
+RUN poetry run python manage.py collectstatic --noinput
 
-# Настраиваем переменные
-ENV PYTHONPATH=/app
-
-# Собираем статику для production
-RUN python manage.py collectstatic --noinput
-
-# Запуск сервера Gunicorn
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Команда запуска Gunicorn через Poetry, чтобы использовать виртуальное окружение
+CMD ["poetry", "run", "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
