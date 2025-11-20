@@ -28,7 +28,9 @@ where = ["."]
 [tool.poetry]
 package-mode = false
 
-[dependency-groups]
-dev = [
-    "flake8 (>=7.3.0,<8.0.0)"
-]
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.3"
+pytest-django = "^4.5"
+black = "^23.3"
+isort = "^5.12"
+flake8 = "^7.3.0"
