@@ -6,53 +6,55 @@ ENV PYTHONUNBUFFERED=1
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Установка системных библиотек для сборки зависимостей
+# Установить необходимое для сборки
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    gcc \
-    libpq-dev \
+    build-essential gcc libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Установка Poetry
+# Установить Poetry
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install poetry
 
 WORKDIR /app
 
-# Копируем pyproject.toml и poetry.lock для установки зависимостей
+# Копируем зависимости
 COPY poetry.lock pyproject.toml ./
 
-# Устанавливаем зависимости в локальное виртуальное окружение в /app/.venv
+# Устанавливаем зависимости
 RUN poetry install --no-root --without dev
 
 # Копируем весь проект
 COPY . .
 
-# Собираем статические файлы через Poetry (в виртуальном окружении)
+# Добавляем переменную для SECRET_KEY (замените на свой реальный ключ или секрет CI)
+ENV SECRET_KEY="change_this_to_your_secret_key"
+
+# Собираем статику внутри poetry run
 RUN poetry run python manage.py collectstatic --noinput
 
-# Финальный минимальный образ
+
+# Минималистичный продакшн-образ
 FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH=/app
 
-WORKDIR /app
-
 # Устанавливаем runtime зависимости
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Копируем виртуальное окружение из слоя builder
-COPY --from=builder /app/.venv /app/.venv
+WORKDIR /app
 
-# Копируем код проекта
+# Копируем виртуальное окружение и код из builder
+COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app /app
 
-# Через Poetry запускаем сборку статических файлов для production (если нужно)
+# Перед запуском Gunicorn также задайте SECRET_KEY
+ENV SECRET_KEY="change_this_to_your_secret_key"
+
+# Собираем статику (если нужно)
 RUN poetry run python manage.py collectstatic --noinput
 
-# Команда запуска Gunicorn через Poetry, чтобы использовать виртуальное окружение
+# Запуск Gunicorn через poetry run, чтобы использовать виртуальное окружение
 CMD ["poetry", "run", "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
