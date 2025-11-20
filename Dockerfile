@@ -1,60 +1,62 @@
-# Используем multistage билд для минимизации размера финального образа
-FROM python:3.11-slim as builder
+# Базовый образ
+FROM python:3.11-slim AS base
 
 # Переменные окружения
 ENV PYTHONUNBUFFERED=1
-ENV POETRY_VIRTUALENVS_IN_PROJECT=true
-ENV PATH="/app/.venv/bin:$PATH"
+ENV POETRY_HOME=/opt/poetry
+ENV PATH=$POETRY_HOME/bin:$PATH
+ENV PYTHONPATH=/app
 
-# Установить необходимое для сборки
+# Установка зависимостей для сборки
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential gcc libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+    build-essential gcc libpq-dev curl && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Установить Poetry
-RUN pip install --upgrade pip setuptools wheel
-RUN pip install poetry
+# Установка Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+    poetry --version
 
+# Создаем рабочую директорию
 WORKDIR /app
 
-# Копируем зависимости
-COPY poetry.lock pyproject.toml ./
+# Копируем файлы зависимостей
+COPY pyproject.toml poetry.lock ./
 
 # Устанавливаем зависимости
-RUN poetry install --no-root --without dev
+RUN poetry config virtualenvs.in-project true && \
+    poetry install --no-root --no-interaction --only main
 
 # Копируем весь проект
 COPY . .
 
-# Добавляем переменную для SECRET_KEY (замените на свой реальный ключ или секрет CI)
-ENV SECRET_KEY="change_this_to_your_secret_key"
-
-# Собираем статику внутри poetry run
+# Собираем статические файлы (можно отключить в продакшене)
 RUN poetry run python manage.py collectstatic --noinput
 
-
-# Минималистичный продакшн-образ
+# Финальный слой - минимальный образ для запуска
 FROM python:3.11-slim
 
+# Настройка переменных окружения
 ENV PYTHONUNBUFFERED=1
-ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH=/app
+ENV SECRET_KEY=your-secret-key-here # Замените на свой секретный ключ или передавайте через env
 
-# Устанавливаем runtime зависимости
-RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Установка зависимостей для базы данных и runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Копируем виртуальное окружение и код
+COPY --from=base /app/.venv /app/.venv
+COPY --from=base /app /app
+
+# Добавляем виртуальное окружение в PATH
+ENV PATH=/app/.venv/bin:$PATH
+
+# Назначение рабочего каталога
 WORKDIR /app
 
-# Копируем виртуальное окружение и код из builder
-COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app /app
-
-# Перед запуском Gunicorn также задайте SECRET_KEY
-ENV SECRET_KEY="change_this_to_your_secret_key"
-
-# Собираем статику (если нужно)
+# Собираем статические файлы для продакшена (опционально)
 RUN poetry run python manage.py collectstatic --noinput
 
-# Запуск Gunicorn через poetry run, чтобы использовать виртуальное окружение
+# Команда запуска - запуск Gunicorn через Poetry
 CMD ["poetry", "run", "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
