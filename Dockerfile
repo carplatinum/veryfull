@@ -38,7 +38,7 @@ FROM python:3.11-slim
 # Настройка переменных окружения
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
-ENV SECRET_KEY=your-secret-key-here # Замените на свой секретный ключ или передавайте через env
+ENV SECRET_KEY=your-secret-key-here  # Замените на свой секретный ключ или передавайте через env
 
 # Установка зависимостей для базы данных и runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
